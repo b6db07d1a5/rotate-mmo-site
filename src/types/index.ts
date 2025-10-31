@@ -52,7 +52,6 @@ export interface SpawnEvent extends BaseEntity {
 // User types
 export interface User extends BaseEntity {
   username: string;
-  email: string;
   password?: string; // Only for creation, not returned in responses
   favorite_bosses: string[];
   notification_settings: NotificationSettings;
@@ -198,14 +197,12 @@ export interface UpdateSpawnEventRequest extends Partial<CreateSpawnEventRequest
 
 export interface CreateUserRequest {
   username: string;
-  email: string;
   password: string;
   guild?: string;
 }
 
 export interface UpdateUserRequest {
   username?: string;
-  email?: string;
   favorite_bosses?: string[];
   notification_settings?: NotificationSettings;
   guild?: string;
@@ -214,7 +211,7 @@ export interface UpdateUserRequest {
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 

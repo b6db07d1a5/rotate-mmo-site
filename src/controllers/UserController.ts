@@ -116,7 +116,17 @@ export class UserController {
   });
 
   getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
-    const result = await this.userService.getCurrentUser();
+    const userId = (req as any).user?.id;
+    
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+      return;
+    }
+    
+    const result = await this.userService.getCurrentUser(userId);
     
     if (result.success) {
       res.status(200).json(result);

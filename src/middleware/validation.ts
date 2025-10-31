@@ -4,7 +4,10 @@ import { ApiResponse } from '@/types';
 
 export const validateRequest = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const { error } = schema.validate(req.body);
+    const { error, value } = schema.validate(req.body, {
+      stripUnknown: true, // Remove unknown fields
+      abortEarly: false // Return all errors, not just the first one
+    });
     
     if (error) {
       res.status(400).json({
@@ -13,6 +16,9 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
       } as ApiResponse);
       return;
     }
+    
+    // Replace req.body with validated and sanitized value
+    req.body = value;
     next();
   };
 };
@@ -131,14 +137,12 @@ export const spawnEventSchemas = {
 export const userSchemas = {
   create: Joi.object({
     username: Joi.string().min(3).max(50).required(),
-    email: Joi.string().email().required(),
     password: Joi.string().min(8).max(100).required(),
     guild: Joi.string().optional()
   }),
   
   update: Joi.object({
     username: Joi.string().min(3).max(50).optional(),
-    email: Joi.string().email().optional(),
     favorite_bosses: Joi.array().items(Joi.string()).max(50).optional(),
     notification_settings: Joi.object({
       push_notifications: Joi.boolean().optional(),
@@ -155,7 +159,7 @@ export const userSchemas = {
   }),
   
   login: Joi.object({
-    email: Joi.string().email().required(),
+    username: Joi.string().min(3).max(50).required(),
     password: Joi.string().required()
   }),
   

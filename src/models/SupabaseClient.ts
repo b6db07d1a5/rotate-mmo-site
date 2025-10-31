@@ -247,8 +247,7 @@ class SupabaseClientWrapper {
   }
 
   public async createUser(data: any): Promise<any> {
-    // Note: For Supabase Auth, user creation should use auth.admin.createUser
-    // But for profile data, we insert into users table
+    // Create user directly in users table (no Supabase Auth needed)
     const { data: result, error } = await this.supabase
       .from('users')
       .insert(data)
@@ -494,98 +493,9 @@ class SupabaseClientWrapper {
     };
   }
 
-  // Authentication methods
-  public async authWithPassword(email: string, password: string): Promise<any> {
-    const { data, error } = await this.supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) throw error;
-    return data;
-  }
-
-  public async register(email: string, password: string, _passwordConfirm: string, username: string, guild?: string): Promise<any> {
-    // First create the auth user
-    const { data: authData, error: authError } = await this.supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username
-        }
-      }
-    });
-
-    if (authError) {
-      // Provide more detailed error information
-      const errorMessage = authError.message || 'Authentication error occurred';
-      const error = new Error(errorMessage);
-      (error as any).originalError = authError;
-      throw error;
-    }
-    if (!authData.user) throw new Error('User creation failed');
-
-    // Then create the user profile in users table
-    const profileDataToInsert: any = {
-      id: authData.user.id,
-      email: email,
-      username: username,
-      favorite_bosses: [],
-      notification_settings: {
-        push_notifications: true,
-        notification_timing: [],
-        guild_notifications: false,
-        rare_boss_alerts: false
-      },
-      stats: {
-        reports_count: 0,
-        verified_reports: 0,
-        accuracy_rate: 0,
-        favorite_bosses_count: 0,
-        achievements: []
-      },
-      is_active: true
-    };
-
-    // Add guild if provided
-    if (guild) {
-      profileDataToInsert.guild = guild;
-    }
-
-    const { data: profileData, error: profileError } = await this.supabase
-      .from('users')
-      .insert(profileDataToInsert)
-      .select()
-      .single();
-
-    if (profileError) {
-      // If profile creation fails, we should clean up the auth user
-      // But for now, just throw the error
-      throw profileError;
-    }
-
-    return { ...authData, record: profileData };
-  }
-
-  public async logout(): Promise<void> {
-    await this.supabase.auth.signOut();
-  }
-
-  public async getAuthToken(): Promise<string | null> {
-    const { data: { session } } = await this.supabase.auth.getSession();
-    return session?.access_token || null;
-  }
-
-  public async getCurrentUser(): Promise<any> {
-    const { data: { user } } = await this.supabase.auth.getUser();
-    return user || null;
-  }
-
-  public async isAuthenticated(): Promise<boolean> {
-    const { data: { session } } = await this.supabase.auth.getSession();
-    return !!session;
-  }
+  // Authentication methods removed - using JWT-only authentication
+  // Passwords are hashed with bcrypt and stored in users table
+  // JWT tokens are generated in UserService
 }
 
 export default SupabaseClientWrapper;

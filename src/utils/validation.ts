@@ -93,11 +93,7 @@ export class ValidationUtils {
       }
     }
 
-    if (data.email !== undefined) {
-      if (!data.email || !this.isValidEmail(data.email)) {
-        errors.push('Valid email address is required');
-      }
-    }
+    // Email validation removed - email is handled internally only
 
     if (data.bio !== undefined && data.bio.length > 500) {
       errors.push('Bio cannot exceed 500 characters');

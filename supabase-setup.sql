@@ -56,11 +56,11 @@ CREATE TABLE IF NOT EXISTS spawn_events (
 -- Note: guild foreign key will be added after guilds table is created
 -- ============================================
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   created TIMESTAMPTZ DEFAULT NOW(),
   updated TIMESTAMPTZ DEFAULT NOW(),
   username TEXT NOT NULL UNIQUE,
-  email TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL, -- Hashed password with bcrypt
   favorite_bosses UUID[] DEFAULT ARRAY[]::UUID[],
   notification_settings JSONB DEFAULT '{
     "push_notifications": true,
@@ -248,11 +248,14 @@ CREATE POLICY "Users can delete their own spawn events" ON spawn_events
   FOR DELETE USING (auth.uid() = reported_by OR auth.role() = 'service_role');
 
 -- Users policies
+-- Allow public SELECT (anyone can view users)
 CREATE POLICY "Users are viewable by everyone" ON users
   FOR SELECT USING (true);
 
-CREATE POLICY "Users can insert their own profile" ON users
-  FOR INSERT WITH CHECK (auth.uid() = id);
+-- Allow public inserts for user registration
+-- (Registration endpoint has rate limiting and validation)
+CREATE POLICY "Allow user registration" ON users
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update their own profile" ON users
   FOR UPDATE USING (auth.uid() = id OR auth.role() = 'service_role');

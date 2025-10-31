@@ -2,6 +2,8 @@ import SupabaseClientWrapper from '@/models/SupabaseClient';
 import { User, CreateUserRequest, UpdateUserRequest, UserQueryParams, ApiResponse, PaginationInfo, LoginRequest } from '@/types';
 import { ValidationUtils } from '@/utils/validation';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import config from '@/config';
 
 export class UserService {
   private pb: SupabaseClientWrapper;
@@ -77,8 +79,9 @@ export class UserService {
       }
 
       const user = await this.pb.getUser(id);
-      // Remove password from response
+      // Remove password and email from response (email is internal only)
       delete user.password;
+      delete user.email;
       return {
         success: true,
         data: user
@@ -114,38 +117,43 @@ export class UserService {
         };
       }
 
-      // Check if email already exists
-      const existingEmail = await this.pb.getUsers({
-        filter: { email: data.email },
-        perPage: 1
-      });
-
-      if (existingEmail.items.length > 0) {
-        return {
-          success: false,
-          error: 'Email already exists'
-        };
-      }
-
-      // For Supabase, user creation uses auth.signUp which also creates the profile
-      // The register method handles both auth and profile creation
+      // Hash password with bcrypt
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      
+      // Generate UUID for user ID
+      const { v4: uuidv4 } = await import('uuid');
+      const userId = uuidv4();
+      
+      // Create user profile directly in users table (no Supabase Auth needed)
       const userData = {
+        id: userId,
         username: ValidationUtils.sanitizeString(data.username),
-        email: data.email.toLowerCase(),
-        password: data.password,
-        passwordConfirm: data.password, // Supabase doesn't need separate confirm in signUp
-        guild: data.guild // Pass guild if provided
+        password: hashedPassword, // Store hashed password
+        favorite_bosses: [],
+        notification_settings: {
+          push_notifications: true,
+          notification_timing: [],
+          guild_notifications: false,
+          rare_boss_alerts: false
+        },
+        stats: {
+          reports_count: 0,
+          verified_reports: 0,
+          accuracy_rate: 0,
+          favorite_bosses_count: 0,
+          achievements: []
+        },
+        is_active: true
       };
 
-      const result = await this.pb.register(
-        userData.email,
-        userData.password,
-        userData.passwordConfirm,
-        userData.username,
-        userData.guild
-      );
+      // Add guild if provided
+      if (data.guild) {
+        (userData as any).guild = data.guild;
+      }
 
-      const user = result.record || result.user;
+      // Insert user directly into users table
+      const user = await this.pb.createUser(userData);
+      
       // Remove password from response
       if (user) {
         delete user.password;
@@ -170,10 +178,7 @@ export class UserService {
         errorMessage = error;
       }
 
-      // Provide helpful suggestions for common errors
-      if (errorMessage.includes('invalid') || errorMessage.includes('Email address')) {
-        errorMessage += '. Note: Supabase may reject certain email domains like example.com. Try using a real email address (Gmail, Outlook, etc.) or check Supabase Auth settings for email restrictions.';
-      }
+      // Return error message
 
       return {
         success: false,
@@ -244,21 +249,7 @@ export class UserService {
         updateData.username = ValidationUtils.sanitizeString(data.username);
       }
       
-      if (data.email) {
-        // Check if new email already exists
-        const existingEmail = await this.pb.getUsers({
-          filter: { email: data.email },
-          perPage: 1
-        });
-
-        if (existingEmail.items.length > 0 && existingEmail.items[0].id !== id) {
-          return {
-            success: false,
-            error: 'Email already exists'
-          };
-        }
-        updateData.email = data.email.toLowerCase();
-      }
+      // Email cannot be updated - it's auto-generated internally
       
       if (data.favorite_bosses) updateData.favorite_bosses = data.favorite_bosses;
       if (data.notification_settings) updateData.notification_settings = data.notification_settings;
@@ -267,8 +258,9 @@ export class UserService {
       if (data.bio) updateData.bio = ValidationUtils.sanitizeString(data.bio);
 
       const user = await this.pb.updateUser(id, updateData);
-      // Remove password from response
+      // Remove password and email from response (email is internal only)
       delete user.password;
+      delete user.email;
       return {
         success: true,
         data: user,
@@ -323,30 +315,75 @@ export class UserService {
 
   async login(credentials: LoginRequest): Promise<ApiResponse<{ user: User; token: string }>> {
     try {
-      const validation = ValidationUtils.validateUserData(credentials);
-      if (!validation.isValid) {
+      // Validate login credentials (username and password only)
+      const errors: string[] = [];
+      if (!credentials.username || credentials.username.trim().length < 3) {
+        errors.push('Username must be at least 3 characters long');
+      }
+      if (credentials.username && credentials.username.length > 50) {
+        errors.push('Username cannot exceed 50 characters');
+      }
+      if (credentials.username && !/^[a-zA-Z0-9_-]+$/.test(credentials.username)) {
+        errors.push('Username can only contain letters, numbers, underscores, and hyphens');
+      }
+      if (!credentials.password) {
+        errors.push('Password is required');
+      }
+      
+      if (errors.length > 0) {
         return {
           success: false,
-          error: validation.errors.join(', ')
+          error: errors.join(', ')
         };
       }
 
-      const authResult = await this.pb.authWithPassword(credentials.email, credentials.password);
-      const user = authResult.user;
-      const token = authResult.session?.access_token;
+      // Find user by username
+      const users = await this.pb.getUsers({
+        filter: { username: credentials.username },
+        perPage: 1
+      });
 
-      // Get full user profile from users table
-      let userProfile = null;
-      if (user?.id) {
-        const { data } = await this.pb.getUser(user.id).catch(() => ({ data: null }));
-        userProfile = data;
+      if (users.items.length === 0) {
+        return {
+          success: false,
+          error: 'Invalid username or password'
+        };
       }
+
+      const user = users.items[0];
+      
+      // Verify password
+      if (!user.password) {
+        return {
+          success: false,
+          error: 'Invalid username or password'
+        };
+      }
+
+      const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+      
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          error: 'Invalid username or password'
+        };
+      }
+
+      // Generate JWT token
+      const jwtSecret = config.jwt.secret || 'your-secret-key';
+      const expiresIn = config.jwt.expiresIn || '24h';
+      const token = jwt.sign(
+        { 
+          id: user.id, 
+          username: user.username 
+        },
+        jwtSecret,
+        { expiresIn } as jwt.SignOptions
+      );
 
       // Remove password from response
-      const responseUser = userProfile || user;
-      if (responseUser) {
-        delete responseUser.password;
-      }
+      const responseUser = { ...user };
+      delete responseUser.password;
 
       return {
         success: true,
@@ -356,53 +393,46 @@ export class UserService {
     } catch (error) {
       return {
         success: false,
-        error: 'Invalid email or password'
+        error: 'Invalid username or password'
       };
     }
   }
 
   async logout(): Promise<ApiResponse<boolean>> {
-    try {
-      await this.pb.logout();
-      return {
-        success: true,
-        data: true,
-        message: 'Logout successful'
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: 'Failed to logout'
-      };
-    }
+    // With JWT, logout is handled client-side by removing the token
+    // Server-side logout not needed (stateless JWT)
+    return {
+      success: true,
+      data: true,
+      message: 'Logout successful'
+    };
   }
 
-  async getCurrentUser(): Promise<ApiResponse<User>> {
+  async getCurrentUser(userId: string): Promise<ApiResponse<User>> {
     try {
-      const user = await this.pb.getCurrentUser();
-      if (!user) {
+      if (!userId) {
         return {
           success: false,
-          error: 'No authenticated user'
+          error: 'User ID required'
         };
       }
 
       // Get full user profile from users table
-      let userProfile = null;
-      if (user?.id) {
-        const { data } = await this.pb.getUser(user.id).catch(() => ({ data: null }));
-        userProfile = data;
+      const user = await this.pb.getUser(userId);
+      
+      if (!user) {
+        return {
+          success: false,
+          error: 'User not found'
+        };
       }
 
       // Remove password from response
-      const responseUser = userProfile || user;
-      if (responseUser) {
-        delete responseUser.password;
-      }
+      const { password, ...userWithoutPassword } = user;
 
       return {
         success: true,
-        data: responseUser
+        data: userWithoutPassword
       };
     } catch (error) {
       return {
@@ -455,8 +485,9 @@ export class UserService {
         }
       });
 
-      // Remove password from response
+      // Remove password and email from response (email is internal only)
       delete updatedUser.password;
+      delete updatedUser.email;
       return {
         success: true,
         data: updatedUser,
@@ -495,7 +526,7 @@ export class UserService {
         };
       }
 
-      const updatedFavorites = user.favorite_bosses.filter(id => id !== bossId);
+      const updatedFavorites = user.favorite_bosses.filter((id: string) => id !== bossId);
       const updatedUser = await this.pb.updateUser(userId, {
         favorite_bosses: updatedFavorites,
         stats: {
@@ -504,8 +535,9 @@ export class UserService {
         }
       });
 
-      // Remove password from response
+      // Remove password and email from response (email is internal only)
       delete updatedUser.password;
+      delete updatedUser.email;
       return {
         success: true,
         data: updatedUser,
@@ -545,7 +577,7 @@ export class UserService {
       const stats = {
         ...user.stats,
         total_spawn_reports: spawnEvents.totalItems,
-        verified_reports: spawnEvents.items.filter(event => event.verified).length,
+        verified_reports: spawnEvents.items.filter((event: any) => event.verified).length,
         recent_reports: spawnEvents.items.slice(0, 10),
         favorite_bosses_count: user.favorite_bosses.length,
         guild: user.guild,
@@ -576,20 +608,19 @@ export class UserService {
 
       const result = await this.pb.getUsers({
         filter: {
-          $or: [
-            { username: { $like: `%${query}%` } },
-            { email: { $like: `%${query}%` } }
-          ]
+          username: { $like: `%${query}%` }
         },
         sort: 'username',
         perPage: 20
       });
 
-      // Remove passwords from response
-      const users = result.items.map(user => {
-        delete user.password;
-        return user;
+      // Remove passwords and emails from response (email is internal only)
+      const users = result.items.map((user: any) => {
+        const { password, email, ...sanitizedUser } = user;
+        return sanitizedUser;
       });
+
+
 
       return {
         success: true,
