@@ -7,7 +7,7 @@ import contributionRoutes from './contributionRoutes';
 const router = Router();
 
 // Health check endpoint
-router.get('/health', (req, res) => {
+router.get('/health', (_req, res) => {
   res.status(200).json({
     success: true,
     message: 'Boss Respawn Tracker API is running',

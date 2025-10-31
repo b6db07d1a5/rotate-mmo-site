@@ -1,3 +1,6 @@
+// Note: Path aliases are handled by tsconfig-paths/register in development mode
+// For production builds, you may need to use a tool like tsc-alias or configure module-alias
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

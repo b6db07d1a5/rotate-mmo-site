@@ -90,12 +90,12 @@ export class SpawnService {
   async createSpawnEvent(data: CreateSpawnEventRequest, userId: string): Promise<ApiResponse<SpawnEvent>> {
     try {
       const validation = ValidationUtils.validateSpawnEventData(data);
-      if (!validation.isValid)Compiling TypeScript files...
-      return {
-        success: false,
-        error: validation.errors.join(', ')
-      };
-    }
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.errors.join(', ')
+        };
+      }
 
       // Verify boss exists
       const boss = await this.pb.getBoss(data.boss_id);
@@ -171,11 +171,22 @@ export class SpawnService {
       }
 
       // Check if user has permission to update (reporter or admin)
-      if (existingEvent.reported_by !== userId && existingEvent.role !== 'admin') {
-        return {
-          success: false,
-          error: 'Insufficient permissions to update this spawn event'
-        };
+      if (existingEvent.reported_by !== userId) {
+        // Check if user is admin
+        try {
+          const user = await this.pb.getUser(userId);
+          if (!user || (user as any).role !== 'admin') {
+            return {
+              success: false,
+              error: 'Insufficient permissions to update this spawn event'
+            };
+          }
+        } catch (error) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to update this spawn event'
+          };
+        }
       }
 
       const updateData: any = {};
@@ -241,11 +252,22 @@ export class SpawnService {
       }
 
       // Check if user has permission to delete (reporter or admin)
-      if (existingEvent.reported_by !== userId && existingEvent.role !== 'admin') {
-        return {
-          success: false,
-          error: 'Insufficient permissions to delete this spawn event'
-        };
+      if (existingEvent.reported_by !== userId) {
+        // Check if user is admin
+        try {
+          const user = await this.pb.getUser(userId);
+          if (!user || (user as any).role !== 'admin') {
+            return {
+              success: false,
+              error: 'Insufficient permissions to delete this spawn event'
+            };
+          }
+        } catch (error) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to delete this spawn event'
+          };
+        }
       }
 
       await this.pb.deleteSpawnEvent(id);
@@ -280,11 +302,22 @@ export class SpawnService {
       }
 
       // Only allow verification by admin or the original reporter
-      if (spawnEvent.reported_by !== userId && spawnEvent.role !== 'admin') {
-        return {
-          success: false,
-          error: 'Insufficient permissions to verify this spawn event'
-        };
+      if (spawnEvent.reported_by !== userId) {
+        // Check if user is admin
+        try {
+          const user = await this.pb.getUser(userId);
+          if (!user || (user as any).role !== 'admin') {
+            return {
+              success: false,
+              error: 'Insufficient permissions to verify this spawn event'
+            };
+          }
+        } catch (error) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to verify this spawn event'
+          };
+        }
       }
 
       const updatedEvent = await this.pb.updateSpawnEvent(id, { verified: true });

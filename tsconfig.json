@@ -25,15 +25,9 @@
     "noUncheckedIndexedAccess": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": "./src",
+    "baseUrl": "./",
     "paths": {
-      "@/*": ["*"],
-      "@/types/*": ["types/*"],
-      "@/services/*": ["services/*"],
-      "@/controllers/*": ["controllers/*"],
-      "@/middleware/*": ["middleware/*"],
-      "@/utils/*": ["utils/*"],
-      "@/config/*": ["config/*"]
+      "@/*": ["src/*"]
     }
   },
   "include": [
