@@ -1,13 +1,13 @@
-import PocketBaseClient from '@/models/PocketBaseClient';
+import SupabaseClientWrapper from '@/models/SupabaseClient';
 import { Boss, CreateBossRequest, UpdateBossRequest, BossQueryParams, ApiResponse, PaginationInfo } from '@/types';
 import { TimerUtils } from '@/utils/timer';
 import { ValidationUtils } from '@/utils/validation';
 
 export class BossService {
-  private pb: PocketBaseClient;
+  private pb: SupabaseClientWrapper;
 
   constructor() {
-    this.pb = PocketBaseClient.getInstance();
+    this.pb = SupabaseClientWrapper.getInstance();
   }
 
   async getBosses(queryParams: BossQueryParams): Promise<ApiResponse<Boss[]>> {

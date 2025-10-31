@@ -1,13 +1,16 @@
-import PocketBaseClient from '@/models/PocketBaseClient';
+import SupabaseClientWrapper from '@/models/SupabaseClient';
 import { SpawnEvent, CreateSpawnEventRequest, UpdateSpawnEventRequest, SpawnEventQueryParams, ApiResponse, PaginationInfo } from '@/types';
 import { TimerUtils } from '@/utils/timer';
 import { ValidationUtils } from '@/utils/validation';
+import { ContributionService } from './ContributionService';
 
 export class SpawnService {
-  private pb: PocketBaseClient;
+  private pb: SupabaseClientWrapper;
+  private contributionService: ContributionService;
 
   constructor() {
-    this.pb = PocketBaseClient.getInstance();
+    this.pb = SupabaseClientWrapper.getInstance();
+    this.contributionService = new ContributionService();
   }
 
   async getSpawnEvents(queryParams: SpawnEventQueryParams): Promise<ApiResponse<SpawnEvent[]>> {
@@ -183,6 +186,7 @@ export class SpawnService {
       if (data.coordinates) updateData.coordinates = data.coordinates;
       if (data.verified !== undefined) updateData.verified = data.verified;
       if (data.kill_time) updateData.kill_time = data.kill_time;
+      if (data.participants !== undefined) updateData.participants = data.participants;
 
       const spawnEvent = await this.pb.updateSpawnEvent(id, updateData);
 
@@ -195,6 +199,15 @@ export class SpawnService {
             next_spawn: TimerUtils.calculateNextSpawn(boss, spawnEvent)
           });
         }
+      }
+
+      // Track contributions when participants are added or updated
+      if (data.participants !== undefined && Array.isArray(data.participants)) {
+        await this.updateContributionsForParticipants(
+          data.participants,
+          spawnEvent.spawn_time || existingEvent.spawn_time,
+          spawnEvent.server || existingEvent.server
+        );
       }
 
       return {
@@ -410,5 +423,98 @@ export class SpawnService {
       acc[event.boss_id] = (acc[event.boss_id] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+  }
+
+  /**
+   * Update contribution scores for participants when they join a spawn event
+   */
+  private async updateContributionsForParticipants(
+    participants: string[],
+    spawnTime: string,
+    server: string
+  ): Promise<void> {
+    try {
+      if (!participants || participants.length === 0) return;
+
+      // Get all users who participated to find their guilds
+      const guildParticipantMap: Record<string, { memberNames: string[]; memberIds: string[] }> = {}; // guild_id -> {memberNames, memberIds}
+
+      for (const participant of participants) {
+        // Try to find user by name or ID
+        try {
+          // Try to find by username first
+          let users = await this.pb.getUsers({
+            filter: { username: participant },
+            perPage: 1
+          });
+
+          // If not found by username, try by ID
+          if (users.items.length === 0) {
+            try {
+              users = await this.pb.getUsers({
+                filter: { id: participant },
+                perPage: 1
+              });
+            } catch (idError) {
+              // ID might not be valid for filter, skip
+            }
+          }
+
+          if (users.items.length > 0) {
+            const user = users.items[0];
+            if (user.guild) {
+              if (!guildParticipantMap[user.guild]) {
+                guildParticipantMap[user.guild] = { memberNames: [], memberIds: [] };
+              }
+              guildParticipantMap[user.guild].memberNames.push(user.username || participant);
+              if (user.id) {
+                guildParticipantMap[user.guild].memberIds.push(user.id);
+              }
+            }
+          } else {
+            // If user not found, try to find existing contribution records with this member name
+            // This allows tracking members even if they're not in the user system
+            try {
+              const contributions = await this.pb.getGuildMemberContributions({
+                filter: { member_name: participant },
+                perPage: 10
+              });
+
+              // Update contributions for all guilds where this member name exists
+              for (const contribution of contributions.items) {
+                if (!guildParticipantMap[contribution.guild_id]) {
+                  guildParticipantMap[contribution.guild_id] = { memberNames: [], memberIds: [] };
+                }
+                guildParticipantMap[contribution.guild_id].memberNames.push(participant);
+              }
+            } catch (contributionError) {
+              // If no contribution record exists, we can't track this participant
+              // They would need to be added to a guild's contribution records first
+              console.warn(`No contribution record found for participant: ${participant}`);
+            }
+          }
+        } catch (error) {
+          // Continue with next participant if user lookup fails
+          console.error(`Failed to lookup user for participant ${participant}:`, error);
+        }
+      }
+
+      // Update contributions for each guild
+      for (const [guildId, data] of Object.entries(guildParticipantMap)) {
+        for (let i = 0; i < data.memberNames.length; i++) {
+          const memberName = data.memberNames[i];
+          const memberId = data.memberIds[i];
+          await this.contributionService.incrementContribution(
+            guildId,
+            memberName,
+            memberId,
+            spawnTime
+          );
+        }
+      }
+    } catch (error) {
+      // Log error but don't fail the spawn event update
+      console.error('Failed to update contributions for participants:', error);
+    }
   }
 }

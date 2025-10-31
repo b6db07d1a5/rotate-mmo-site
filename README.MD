@@ -1,6 +1,6 @@
 # Boss Respawn Tracker API
 
-A comprehensive API system for tracking boss respawn times in MMORPG games, built with PocketBase JS backend.
+A comprehensive API system for tracking boss respawn times in MMORPG games, built with Supabase backend.
 
 ## 🎯 Overview
 
@@ -34,11 +34,11 @@ This API provides a centralized system for MMORPG players to track, manage, and 
 
 ## 🏗️ Architecture
 
-### Backend (PocketBase)
-- **Collections**: Structured data models for bosses, users, spawns, and comments
-- **Real-time Updates**: WebSocket connections for live timer updates
-- **File Storage**: Boss images, screenshots, and documentation
-- **Email System**: Notification delivery and account verification
+### Backend (Supabase)
+- **Database**: PostgreSQL database with structured tables for bosses, users, spawns, and comments
+- **Real-time Updates**: WebSocket connections for live timer updates via Supabase Realtime
+- **File Storage**: Boss images, screenshots, and documentation via Supabase Storage
+- **Authentication**: Supabase Auth for secure user authentication and authorization
 
 ### API Endpoints
 - **Authentication**: `/api/auth/*` - Login, register, password reset
@@ -97,7 +97,6 @@ This API provides a centralized system for MMORPG players to track, manage, and 
 - Predict future spawn times using historical data
 
 ### 3. Notification System
-- Email notifications for upcoming boss spawns
 - In-app alerts and push notifications
 - Customizable notification timing (5min, 1min, 30sec before spawn)
 - Guild-wide boss alerts
@@ -199,8 +198,8 @@ This API provides a centralized system for MMORPG players to track, manage, and 
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- npm package manager
-- PocketBase instance
+- yarn package manager
+- Supabase instance
 
 ### Installation
 
@@ -212,7 +211,7 @@ This API provides a centralized system for MMORPG players to track, manage, and 
 
 2. **Install dependencies**
    ```bash
-   npm install
+   yarn install
    ```
 
 3. **Set up environment variables**
@@ -223,65 +222,87 @@ This API provides a centralized system for MMORPG players to track, manage, and 
 
 4. **Start development server**
    ```bash
-   npm run dev
+   yarn dev
    ```
 
 5. **Build for production**
    ```bash
-   npm run build
-   npm start
+   yarn build
+   yarn start
    ```
 
 ### Development Commands
 
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build TypeScript to JavaScript
-- `npm start` - Start production server
-- `npm test` - Run tests
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint errors
-- `npm run format` - Format code with Prettier
+- `yarn dev` - Start development server with hot reload
+- `yarn build` - Build TypeScript to JavaScript
+- `yarn start` - Start production server
+- `yarn test` - Run tests
+- `yarn lint` - Run ESLint
+- `yarn lint:fix` - Fix ESLint errors
+- `yarn format` - Format code with Prettier
 
 ### Setup Steps
 
-1. **Setup PocketBase**: Deploy PocketBase backend with required collections
-2. **Configure Collections**: Set up boss, spawn, user, and community collections
-3. **Environment Configuration**: Update `.env` file with your settings
-4. **Database Setup**: Create required collections in PocketBase
-5. **API Testing**: Test endpoints using your preferred API client
-6. **Frontend Integration**: Connect web/mobile clients to the API
-7. **Deployment**: Launch the system with monitoring and backup systems
+1. **Setup Supabase**: 
+   - Create a Supabase project at https://supabase.com
+   - See `SUPABASE_SETUP.md` for detailed step-by-step instructions
+   
+2. **Configure Database**: 
+   - Go to Supabase Dashboard → SQL Editor
+   - Run the SQL script from `supabase-setup.sql` to create all required tables
+   - This creates: bosses, spawn_events, users, comments, guilds, guild_member_contributions
+
+3. **Get Supabase Credentials**:
+   - Go to Settings → API in your Supabase dashboard
+   - Copy Project URL, anon key, and service_role key
+
+4. **Environment Configuration**: 
+   - Copy `env.example` to `.env`
+   - Update `.env` with your Supabase credentials:
+     ```env
+     SUPABASE_URL=your-project-url
+     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+     SUPABASE_ANON_KEY=your-anon-key
+     ```
+
+5. **Install Dependencies**: `yarn install`
+
+6. **Start Development Server**: `yarn dev`
+
+7. **API Testing**: Test endpoints using your preferred API client (Postman, curl, etc.)
+
+For detailed Supabase setup instructions, see **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
 
 ## 📦 Package Management
 
-This project uses **npm** as the package manager.
+This project uses **yarn** as the package manager.
 
-### npm Commands Reference
+### yarn Commands Reference
 
 ```bash
 # Install dependencies
-npm install
+yarn install
 
 # Add a new dependency
-npm install <package-name>
+yarn add <package-name>
 
 # Add a development dependency
-npm install -D <package-name>
+yarn add -D <package-name>
 
 # Remove a dependency
-npm uninstall <package-name>
+yarn remove <package-name>
 
 # Update dependencies
-npm update
+yarn upgrade
 
 # Check for outdated packages
-npm outdated
+yarn outdated
 
 # Run scripts
-npm run <script-name>
+yarn <script-name>
 
-# Check npm version
-npm --version
+# Check yarn version
+yarn --version
 ```
 
 ## 🤝 Contributing
@@ -292,11 +313,11 @@ This project welcomes contributions from the MMORPG community. Whether you're a 
 
 1. Fork the repository
 2. Clone your fork: `git clone <your-fork-url>`
-3. Install dependencies: `npm install`
+3. Install dependencies: `yarn install`
 4. Create a feature branch: `git checkout -b feature/your-feature`
 5. Make your changes and test them
-6. Run linting: `npm run lint`
-7. Format code: `npm run format`
+6. Run linting: `yarn lint`
+7. Format code: `yarn format`
 8. Commit your changes: `git commit -m "Add your feature"`
 9. Push to your fork: `git push origin feature/your-feature`
 10. Create a Pull Request

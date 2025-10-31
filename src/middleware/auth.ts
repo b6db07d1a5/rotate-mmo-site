@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '@/config';
-import PocketBaseClient from '@/models/PocketBaseClient';
+import SupabaseClientWrapper from '@/models/SupabaseClient';
 import { ApiResponse } from '@/types';
 
 interface AuthRequest extends Request {
@@ -21,9 +21,13 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return;
     }
 
-    const pb = PocketBaseClient.getInstance();
+    const supabase = SupabaseClientWrapper.getInstance();
+    const supabaseClient = supabase.getClient();
     
-    if (!pb.isAuthenticated()) {
+    // Verify token with Supabase
+    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+
+    if (error || !user) {
       res.status(401).json({
         success: false,
         error: 'Invalid or expired token'
@@ -31,16 +35,14 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return;
     }
 
-    const user = pb.getCurrentUser();
-    if (!user) {
-      res.status(401).json({
-        success: false,
-        error: 'User not found'
-      } as ApiResponse);
-      return;
-    }
+    // Get full user profile from users table
+    const { data: userProfile } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-    req.user = user;
+    req.user = userProfile || user;
     next();
   } catch (error) {
     res.status(401).json({
@@ -56,9 +58,19 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-      const pb = PocketBaseClient.getInstance();
-      if (pb.isAuthenticated()) {
-        req.user = pb.getCurrentUser();
+      const supabase = SupabaseClientWrapper.getInstance();
+      const supabaseClient = supabase.getClient();
+      const { data: { user } } = await supabaseClient.auth.getUser(token);
+      
+      if (user) {
+        // Get full user profile from users table
+        const { data: userProfile } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        req.user = userProfile || user;
       }
     }
 
@@ -115,8 +127,8 @@ export const requireGuildMember = async (req: AuthRequest, res: Response, next: 
       return;
     }
 
-    const pb = PocketBaseClient.getInstance();
-    const guild = await pb.getGuild(guildId);
+    const supabase = SupabaseClientWrapper.getInstance();
+    const guild = await supabase.getGuild(guildId);
 
     if (!guild || !guild.members.includes(req.user.id)) {
       res.status(403).json({

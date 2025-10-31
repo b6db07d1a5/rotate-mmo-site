@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bossRoutes from './bossRoutes';
 import spawnRoutes from './spawnRoutes';
 import userRoutes from './userRoutes';
+import contributionRoutes from './contributionRoutes';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.get('/health', (req, res) => {
 router.use('/bosses', bossRoutes);
 router.use('/spawns', spawnRoutes);
 router.use('/users', userRoutes);
+router.use('/guild-contributions', contributionRoutes);
 
 // 404 handler for API routes
 router.use('*', (req, res) => {

@@ -1,13 +1,13 @@
-import PocketBaseClient from '@/models/PocketBaseClient';
+import SupabaseClientWrapper from '@/models/SupabaseClient';
 import { User, CreateUserRequest, UpdateUserRequest, UserQueryParams, ApiResponse, PaginationInfo, LoginRequest } from '@/types';
 import { ValidationUtils } from '@/utils/validation';
 import bcrypt from 'bcryptjs';
 
 export class UserService {
-  private pb: PocketBaseClient;
+  private pb: SupabaseClientWrapper;
 
   constructor() {
-    this.pb = PocketBaseClient.getInstance();
+    this.pb = SupabaseClientWrapper.getInstance();
   }
 
   async getUsers(queryParams: UserQueryParams): Promise<ApiResponse<User[]>> {
@@ -127,34 +127,28 @@ export class UserService {
         };
       }
 
+      // For Supabase, user creation uses auth.signUp which also creates the profile
+      // The register method handles both auth and profile creation
       const userData = {
-        ...data,
         username: ValidationUtils.sanitizeString(data.username),
         email: data.email.toLowerCase(),
-        favorite_bosses: [],
-        notification_settings: {
-          email_notifications: true,
-          push_notifications: false,
-          notification_timing: [
-            { type: 'minutes', value: 5 },
-            { type: 'minutes', value: 1 }
-          ],
-          guild_notifications: true,
-          rare_boss_alerts: true
-        },
-        stats: {
-          reports_count: 0,
-          verified_reports: 0,
-          accuracy_rate: 0,
-          favorite_bosses_count: 0,
-          achievements: []
-        },
-        is_active: true
+        password: data.password,
+        passwordConfirm: data.password // Supabase doesn't need separate confirm in signUp
       };
 
-      const user = await this.pb.createUser(userData);
+      const result = await this.pb.register(
+        userData.email,
+        userData.password,
+        userData.passwordConfirm,
+        userData.username
+      );
+
+      const user = result.record || result.user;
       // Remove password from response
-      delete user.password;
+      if (user) {
+        delete user.password;
+      }
+
       return {
         success: true,
         data: user,
@@ -318,15 +312,25 @@ export class UserService {
       }
 
       const authResult = await this.pb.authWithPassword(credentials.email, credentials.password);
-      const user = authResult.record;
-      const token = authResult.token;
+      const user = authResult.user;
+      const token = authResult.session?.access_token;
+
+      // Get full user profile from users table
+      let userProfile = null;
+      if (user?.id) {
+        const { data } = await this.pb.getUser(user.id).catch(() => ({ data: null }));
+        userProfile = data;
+      }
 
       // Remove password from response
-      delete user.password;
+      const responseUser = userProfile || user;
+      if (responseUser) {
+        delete responseUser.password;
+      }
 
       return {
         success: true,
-        data: { user, token },
+        data: { user: responseUser, token },
         message: 'Login successful'
       };
     } catch (error) {
@@ -339,7 +343,7 @@ export class UserService {
 
   async logout(): Promise<ApiResponse<boolean>> {
     try {
-      this.pb.logout();
+      await this.pb.logout();
       return {
         success: true,
         data: true,
@@ -355,7 +359,7 @@ export class UserService {
 
   async getCurrentUser(): Promise<ApiResponse<User>> {
     try {
-      const user = this.pb.getCurrentUser();
+      const user = await this.pb.getCurrentUser();
       if (!user) {
         return {
           success: false,
@@ -363,11 +367,22 @@ export class UserService {
         };
       }
 
+      // Get full user profile from users table
+      let userProfile = null;
+      if (user?.id) {
+        const { data } = await this.pb.getUser(user.id).catch(() => ({ data: null }));
+        userProfile = data;
+      }
+
       // Remove password from response
-      delete user.password;
+      const responseUser = userProfile || user;
+      if (responseUser) {
+        delete responseUser.password;
+      }
+
       return {
         success: true,
-        data: user
+        data: responseUser
       };
     } catch (error) {
       return {

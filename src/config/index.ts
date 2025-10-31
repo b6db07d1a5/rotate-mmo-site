@@ -7,22 +7,15 @@ const config: AppConfig = {
   port: parseInt(process.env.PORT || '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   
-  pocketbase: {
-    url: process.env.POCKETBASE_URL || 'http://localhost:8090',
-    adminEmail: process.env.POCKETBASE_ADMIN_EMAIL || 'admin@example.com',
-    adminPassword: process.env.POCKETBASE_ADMIN_PASSWORD || 'password',
+  supabase: {
+    url: process.env.SUPABASE_URL || 'https://your-project.supabase.co',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    anonKey: process.env.SUPABASE_ANON_KEY || '',
   },
   
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-  },
-  
-  email: {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
   },
   
   rateLimit: {

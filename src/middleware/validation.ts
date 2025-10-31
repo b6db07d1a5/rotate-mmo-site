@@ -114,7 +114,8 @@ export const spawnEventSchemas = {
       z: Joi.number().optional()
     }).optional(),
     verified: Joi.boolean().optional(),
-    kill_time: Joi.date().iso().optional()
+    kill_time: Joi.date().iso().optional(),
+    participants: Joi.array().items(Joi.string()).optional()
   }),
   
   query: Joi.object({
@@ -141,7 +142,6 @@ export const userSchemas = {
     email: Joi.string().email().optional(),
     favorite_bosses: Joi.array().items(Joi.string()).max(50).optional(),
     notification_settings: Joi.object({
-      email_notifications: Joi.boolean().optional(),
       push_notifications: Joi.boolean().optional(),
       notification_timing: Joi.array().items(Joi.object({
         type: Joi.string().valid('minutes', 'seconds').required(),
@@ -193,5 +193,27 @@ export const guildSchemas = {
     name: Joi.string().min(3).max(100).optional(),
     description: Joi.string().max(500).optional(),
     notification_channel: Joi.string().max(100).optional()
+  })
+};
+
+export const guildMemberContributionSchemas = {
+  create: Joi.object({
+    guild_id: Joi.string().required(),
+    member_name: Joi.string().min(1).max(100).required(),
+    member_id: Joi.string().optional()
+  }),
+  
+  update: Joi.object({
+    member_name: Joi.string().min(1).max(100).optional(),
+    contribution_score: Joi.number().integer().min(0).optional()
+  }),
+  
+  query: Joi.object({
+    page: Joi.number().integer().min(1).max(1000).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+    guild_id: Joi.string().optional(),
+    member_name: Joi.string().max(100).optional(),
+    sort_by: Joi.string().valid('member_name', 'contribution_score', 'created').default('contribution_score'),
+    sort_order: Joi.string().valid('asc', 'desc').default('desc')
   })
 };

@@ -65,7 +65,6 @@ export interface User extends BaseEntity {
 }
 
 export interface NotificationSettings {
-  email_notifications: boolean;
   push_notifications: boolean;
   notification_timing: NotificationTiming[];
   guild_notifications: boolean;
@@ -112,6 +111,35 @@ export interface GuildStats {
   active_members: number;
   boss_kills: number;
   accuracy_rate: number;
+}
+
+// Guild Member Contribution types
+export interface GuildMemberContribution extends BaseEntity {
+  guild_id: string;
+  member_name: string;
+  member_id?: string; // Optional reference to user ID
+  contribution_score: number; // Number of events joined
+  last_event_date?: string; // Date of last event participation
+}
+
+export interface CreateGuildMemberContributionRequest {
+  guild_id: string;
+  member_name: string;
+  member_id?: string;
+}
+
+export interface UpdateGuildMemberContributionRequest {
+  member_name?: string;
+  contribution_score?: number;
+}
+
+export interface GuildMemberContributionQueryParams {
+  page?: number;
+  limit?: number;
+  guild_id?: string;
+  member_name?: string;
+  sort_by?: 'member_name' | 'contribution_score' | 'created';
+  sort_order?: 'asc' | 'desc';
 }
 
 // API Response types
@@ -165,6 +193,7 @@ export interface CreateSpawnEventRequest {
 export interface UpdateSpawnEventRequest extends Partial<CreateSpawnEventRequest> {
   verified?: boolean;
   kill_time?: string;
+  participants?: string[];
 }
 
 export interface CreateUserRequest {
@@ -265,20 +294,14 @@ export interface SocketEvents {
 export interface AppConfig {
   port: number;
   nodeEnv: string;
-  pocketbase: {
+  supabase: {
     url: string;
-    adminEmail: string;
-    adminPassword: string;
+    serviceRoleKey: string;
+    anonKey: string;
   };
   jwt: {
     secret: string;
     expiresIn: string;
-  };
-  email: {
-    host: string;
-    port: number;
-    user: string;
-    pass: string;
   };
   rateLimit: {
     windowMs: number;
