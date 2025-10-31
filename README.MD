@@ -273,6 +273,54 @@ This API provides a centralized system for MMORPG players to track, manage, and 
 
 For detailed Supabase setup instructions, see **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**
 
+## 📮 Postman Collection
+
+A complete Postman collection is available for easy API testing:
+
+### Import Collection
+
+1. **Import the Collection**:
+   - Open Postman
+   - Click **Import** button
+   - Select `Boss-Respawn-Tracker-API.postman_collection.json`
+   - The collection will be imported with all API endpoints organized by category
+
+2. **Import the Environment** (Optional):
+   - Click **Import** button
+   - Select `Boss-Respawn-Tracker-API.postman_environment.json`
+   - Select the environment from the dropdown in Postman
+   - Update the `base_url` variable if your server runs on a different port
+
+3. **Set Up Authentication**:
+   - Use the **Login** request in the Users folder
+   - The token will automatically be saved to the `auth_token` variable
+   - All authenticated requests will use this token automatically
+
+### Collection Structure
+
+The collection includes:
+
+- **Health Check**: Verify API is running
+- **Bosses**: Complete CRUD operations for bosses
+- **Spawn Events**: Manage spawn events, reports, and verification
+- **Users**: User management, authentication, favorites
+- **Guild Contributions**: Track guild member contributions
+
+### Environment Variables
+
+- `base_url`: API base URL (default: `http://localhost:3000`)
+- `auth_token`: JWT authentication token (auto-populated after login)
+- `user_id`, `boss_id`, `spawn_id`, `guild_id`, `contribution_id`: Helper variables for easy testing
+
+### Quick Start Testing
+
+1. Start the server: `yarn dev`
+2. Import the Postman collection and environment
+3. Test **Health Check** endpoint to verify connection
+4. **Register** a new user
+5. **Login** to get authentication token
+6. Test authenticated endpoints (Create Boss, Create Spawn Event, etc.)
+
 ## 📦 Package Management
 
 This project uses **yarn** as the package manager.

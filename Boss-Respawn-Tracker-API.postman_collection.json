@@ -1,0 +1,746 @@
+{
+	"info": {
+		"_postman_id": "boss-respawn-tracker-api",
+		"name": "Boss Respawn Tracker API",
+		"description": "Complete API collection for Boss Respawn Tracker - MMORPG Boss Tracking System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "boss-respawn-tracker"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "health"]
+						},
+						"description": "Check if the API is running"
+					}
+				}
+			]
+		},
+		{
+			"name": "Bosses",
+			"item": [
+				{
+					"name": "Get All Bosses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses?page=1&limit=50&sort_by=created&sort_order=desc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses"],
+							"query": [
+								{"key": "page", "value": "1", "description": "Page number"},
+								{"key": "limit", "value": "50", "description": "Items per page"},
+								{"key": "server", "value": "", "description": "Filter by server"},
+								{"key": "difficulty", "value": "", "description": "Filter by difficulty (easy, medium, hard, extreme, legendary)"},
+								{"key": "verified", "value": "", "description": "Filter by verification status"},
+								{"key": "search", "value": "", "description": "Search term"},
+								{"key": "sort_by", "value": "created", "description": "Sort field (name, level, respawn_time, created)"},
+								{"key": "sort_order", "value": "desc", "description": "Sort order (asc, desc)"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Bosses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/search?q=dragon",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", "search"],
+							"query": [
+								{"key": "q", "value": "dragon", "description": "Search query"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Bosses by Server",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/server/:server",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", "server", ":server"],
+							"variable": [
+								{"key": "server", "value": "Server1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Bosses by Difficulty",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/difficulty/:difficulty",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", "difficulty", ":difficulty"],
+							"variable": [
+								{"key": "difficulty", "value": "hard", "description": "easy, medium, hard, extreme, legendary"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Boss by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", ":id"],
+							"variable": [
+								{"key": "id", "value": "boss-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Boss Timer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/:id/timer",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", ":id", "timer"],
+							"variable": [
+								{"key": "id", "value": "boss-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Boss Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/:id/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", ":id", "stats"],
+							"variable": [
+								{"key": "id", "value": "boss-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Boss",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Dragon Boss\",\n  \"level\": 50,\n  \"location\": \"Dragon Cave\",\n  \"respawn_time\": 120,\n  \"server\": \"Server1\",\n  \"description\": \"A powerful dragon boss\",\n  \"difficulty\": \"hard\",\n  \"tags\": [\"dragon\", \"boss\"],\n  \"drops\": [\"Dragon Scale\", \"Dragon Claw\"],\n  \"requirements\": [\"Level 40+\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bosses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses"]
+						}
+					}
+				},
+				{
+					"name": "Update Boss",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Dragon Boss\",\n  \"level\": 55,\n  \"description\": \"Updated description\",\n  \"verified\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bosses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", ":id"],
+							"variable": [
+								{"key": "id", "value": "boss-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Boss",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bosses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bosses", ":id"],
+							"variable": [
+								{"key": "id", "value": "boss-id-here"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Spawn Events",
+			"item": [
+				{
+					"name": "Get All Spawn Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/spawns?page=1&limit=50",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "50"},
+								{"key": "boss_id", "value": "", "description": "Filter by boss ID"},
+								{"key": "server", "value": "", "description": "Filter by server"},
+								{"key": "verified", "value": "", "description": "Filter by verification status"},
+								{"key": "date_from", "value": "", "description": "ISO date"},
+								{"key": "date_to", "value": "", "description": "ISO date"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Recent Spawn Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/recent?limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", "recent"],
+							"query": [
+								{"key": "limit", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Spawn Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/statistics?boss_id=&server=&date_from=&date_to=",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", "statistics"],
+							"query": [
+								{"key": "boss_id", "value": ""},
+								{"key": "server", "value": ""},
+								{"key": "date_from", "value": "", "description": "ISO date"},
+								{"key": "date_to", "value": "", "description": "ISO date"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Spawn Events by Boss",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/boss/:bossId?limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", "boss", ":bossId"],
+							"variable": [
+								{"key": "bossId", "value": "boss-id-here"}
+							],
+							"query": [
+								{"key": "limit", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Spawn Events by Server",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/server/:server?limit=50",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", "server", ":server"],
+							"variable": [
+								{"key": "server", "value": "Server1"}
+							],
+							"query": [
+								{"key": "limit", "value": "50"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Spawn Event by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", ":id"],
+							"variable": [
+								{"key": "id", "value": "spawn-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Spawn Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"boss_id\": \"boss-id-here\",\n  \"spawn_time\": \"2024-01-15T10:00:00Z\",\n  \"server\": \"Server1\",\n  \"notes\": \"Found at the cave entrance\",\n  \"coordinates\": {\n    \"x\": 100.5,\n    \"y\": 200.3,\n    \"z\": 50.0\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/spawns",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns"]
+						}
+					}
+				},
+				{
+					"name": "Update Spawn Event",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"spawn_time\": \"2024-01-15T10:05:00Z\",\n  \"notes\": \"Updated location\",\n  \"verified\": true,\n  \"kill_time\": \"2024-01-15T10:10:00Z\",\n  \"participants\": [\"player1\", \"player2\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/spawns/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", ":id"],
+							"variable": [
+								{"key": "id", "value": "spawn-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Spawn Event",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", ":id"],
+							"variable": [
+								{"key": "id", "value": "spawn-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Verify Spawn Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/spawns/:id/verify",
+							"host": ["{{base_url}}"],
+							"path": ["api", "spawns", ":id", "verify"],
+							"variable": [
+								{"key": "id", "value": "spawn-id-here"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users?page=1&limit=50&sort_by=created&sort_order=desc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "50"},
+								{"key": "guild", "value": "", "description": "Filter by guild ID"},
+								{"key": "search", "value": "", "description": "Search term"},
+								{"key": "sort_by", "value": "created", "description": "username, created, stats.reports_count"},
+								{"key": "sort_order", "value": "desc", "description": "asc, desc"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/search?q=username",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "search"],
+							"query": [
+								{"key": "q", "value": "username", "description": "Search query"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me"]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{"key": "id", "value": "user-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/:id/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":id", "stats"],
+							"variable": [
+								{"key": "id", "value": "user-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"guild\": \"guild-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"        pm.environment.set('auth_token', jsonData.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "login"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "logout"]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"updatedusername\",\n  \"bio\": \"Updated bio\",\n  \"notification_settings\": {\n    \"push_notifications\": true,\n    \"notification_timing\": [\n      {\n        \"type\": \"minutes\",\n        \"value\": 5\n      }\n    ],\n    \"guild_notifications\": true,\n    \"rare_boss_alerts\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{"key": "id", "value": "user-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{"key": "id", "value": "user-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Favorite Boss",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId/favorites/:bossId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":userId", "favorites", ":bossId"],
+							"variable": [
+								{"key": "userId", "value": "user-id-here"},
+								{"key": "bossId", "value": "boss-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Remove Favorite Boss",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId/favorites/:bossId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":userId", "favorites", ":bossId"],
+							"variable": [
+								{"key": "userId", "value": "user-id-here"},
+								{"key": "bossId", "value": "boss-id-here"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Guild Contributions",
+			"item": [
+				{
+					"name": "Get All Contributions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions?page=1&limit=50&sort_by=contribution_score&sort_order=desc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "50"},
+								{"key": "guild_id", "value": "", "description": "Filter by guild ID"},
+								{"key": "member_name", "value": "", "description": "Filter by member name"},
+								{"key": "sort_by", "value": "contribution_score", "description": "member_name, contribution_score, created"},
+								{"key": "sort_order", "value": "desc", "description": "asc, desc"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Contributions by Guild",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions/guild/:guildId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions", "guild", ":guildId"],
+							"variable": [
+								{"key": "guildId", "value": "guild-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Contribution by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions", ":id"],
+							"variable": [
+								{"key": "id", "value": "contribution-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Contribution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"guild_id\": \"guild-id-here\",\n  \"member_name\": \"PlayerName\",\n  \"member_id\": \"user-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions"]
+						}
+					}
+				},
+				{
+					"name": "Update Contribution",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"member_name\": \"UpdatedPlayerName\",\n  \"contribution_score\": 10\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions", ":id"],
+							"variable": [
+								{"key": "id", "value": "contribution-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Contribution",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions", ":id"],
+							"variable": [
+								{"key": "id", "value": "contribution-id-here"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Recalculate Guild Contributions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/guild-contributions/guild/:guildId/recalculate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "guild-contributions", "guild", ":guildId", "recalculate"],
+							"variable": [
+								{"key": "guildId", "value": "guild-id-here"}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

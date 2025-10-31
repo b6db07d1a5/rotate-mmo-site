@@ -9,11 +9,10 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
     if (error) {
       res.status(400).json({
         success: false,
-        error: error.details[0].message
+        error: error?.details?.[0]?.message ?? 'Invalid request'
       } as ApiResponse);
       return;
     }
-    
     next();
   };
 };
@@ -25,7 +24,7 @@ export const validateQuery = (schema: Joi.ObjectSchema) => {
     if (error) {
       res.status(400).json({
         success: false,
-        error: error.details[0].message
+        error: error?.details?.[0]?.message ?? 'Invalid request'
       } as ApiResponse);
       return;
     }
@@ -41,7 +40,7 @@ export const validateParams = (schema: Joi.ObjectSchema) => {
     if (error) {
       res.status(400).json({
         success: false,
-        error: error.details[0].message
+        error: error?.details?.[0]?.message ?? 'Invalid request'
       } as ApiResponse);
       return;
     }
