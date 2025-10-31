@@ -61,7 +61,26 @@ If you plan to use file uploads (boss images, etc.):
    SUPABASE_ANON_KEY=your_anon_key_here
    ```
 
-### 6. Test the Connection
+### 6. Configure Supabase Auth Settings
+
+To allow user registration, you may need to adjust Supabase Auth settings:
+
+1. Go to your Supabase Dashboard → **Authentication** → **Settings**
+
+2. **Email Auth Settings**:
+   - **Enable email confirmations**: 
+     - For development/testing: Set to **OFF** (allows immediate login without email verification)
+     - For production: Set to **ON** (requires email verification)
+   - **Email templates**: Customize if needed
+
+3. **Email Domain Restrictions** (Optional):
+   - By default, Supabase may block certain test domains like `example.com`
+   - For testing: Use real email addresses (Gmail, etc.) or disable domain restrictions
+   - You can add specific domains to an allowlist in Auth settings
+
+4. **Rate Limiting**: Adjust if needed for development
+
+### 7. Test the Connection
 
 1. Install dependencies:
    ```bash
@@ -74,6 +93,20 @@ If you plan to use file uploads (boss images, etc.):
    ```
 
 3. Check the console for any connection errors
+
+**Important - Email Requirements**:
+- Supabase Auth **requires** an email address for user registration
+- Even with Admin API, Supabase may block temporary/test email domains like `@temp.local`, `@example.com`, etc.
+- **Recommended**: Always provide a real email address when registering users
+- **Alternative**: If you need to allow users without email, you'll need to:
+  1. Configure Supabase Auth to allow specific domains in Auth settings
+  2. Or use a temporary email service that Supabase accepts (like `10minutemail.com`)
+
+**Note**: If you're getting "User not allowed" or "Email address is invalid" errors:
+- This means Supabase is blocking the email domain
+- **Solution**: Provide a real email address (Gmail, Outlook, etc.)
+- The Admin API still validates email domains for security reasons
+- Check Supabase Dashboard → Authentication → Settings → Email Auth for domain restrictions
 
 ## Database Tables Created
 

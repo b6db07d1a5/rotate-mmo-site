@@ -133,14 +133,16 @@ export class UserService {
         username: ValidationUtils.sanitizeString(data.username),
         email: data.email.toLowerCase(),
         password: data.password,
-        passwordConfirm: data.password // Supabase doesn't need separate confirm in signUp
+        passwordConfirm: data.password, // Supabase doesn't need separate confirm in signUp
+        guild: data.guild // Pass guild if provided
       };
 
       const result = await this.pb.register(
         userData.email,
         userData.password,
         userData.passwordConfirm,
-        userData.username
+        userData.username,
+        userData.guild
       );
 
       const user = result.record || result.user;
@@ -154,10 +156,28 @@ export class UserService {
         data: user,
         message: 'User created successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
+      // Return more detailed error message
+      let errorMessage = 'Failed to create user';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.originalError?.message) {
+        errorMessage = error.originalError.message;
+      } else if (error?.error?.message) {
+        errorMessage = error.error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      // Provide helpful suggestions for common errors
+      if (errorMessage.includes('invalid') || errorMessage.includes('Email address')) {
+        errorMessage += '. Note: Supabase may reject certain email domains like example.com. Try using a real email address (Gmail, Outlook, etc.) or check Supabase Auth settings for email restrictions.';
+      }
+
       return {
         success: false,
-        error: 'Failed to create user'
+        error: errorMessage
       };
     }
   }

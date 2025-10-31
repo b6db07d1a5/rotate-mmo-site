@@ -45,7 +45,7 @@ class SupabaseClientWrapper {
           query = query.in(key, value);
         } else if (typeof value === 'object' && !Array.isArray(value)) {
           // Handle operators like { $like: '%text%' }, { '>=': value }, etc.
-          if ('$like' in value) {
+          if ('$like' in value && typeof value.$like === 'string') {
             const pattern = value.$like.replace(/%/g, '');
             query = query.ilike(key, `%${pattern}%`);
           } else if ('>=' in value) {
@@ -57,15 +57,25 @@ class SupabaseClientWrapper {
           } else if ('<' in value) {
             query = query.lt(key, value['<']);
           } else if ('$in' in value) {
-            query = query.in(key, value.$in);
+            // Ensure value.$in is an array before passing to .in()
+            if (Array.isArray(value.$in)) {
+              query = query.in(key, value.$in);
+            }
           } else if ('$or' in value) {
             // Handle $or operator - convert to Supabase or filter
             const orConditions = value.$or;
             if (Array.isArray(orConditions) && orConditions.length > 0) {
-              query = query.or(orConditions.map((cond: any) => {
-                const [k, v] = Object.entries(cond)[0];
-                return `${k}.eq.${v}`;
-              }).join(','));
+              query = query.or(
+                orConditions
+                  .map((cond: any) => {
+                    const entries = Object.entries(cond);
+                    if (entries.length === 0) return '';
+                    const [k, v] = entries[0] as [string, unknown];
+                    return `${k}.eq.${v}`;
+                  })
+                  .filter(Boolean)
+                  .join(',')
+              );
             }
           }
         } else {
@@ -97,7 +107,7 @@ class SupabaseClientWrapper {
   private formatResponse(data: any[], count: number | null, page: number, perPage: number) {
     return {
       items: data || [],
-      totalItems: count || 0,
+      totalItems: count ?? 0,
       page: page,
       perPage: perPage,
       totalPages: count ? Math.ceil(count / perPage) : 0
@@ -443,16 +453,18 @@ class SupabaseClientWrapper {
     const fileName = `${recordId}-${Date.now()}.${fileExt}`;
     const filePath = `${collection}/${fileName}`;
 
-    const { data, error } = await this.supabase.storage
+    const { error } = await this.supabase.storage
       .from('uploads')
       .upload(filePath, file);
 
     if (error) throw error;
 
     // Update record with file URL
-    const { publicUrl } = this.supabase.storage
+    // getPublicUrl returns { data: { publicUrl: string } }
+    const urlResult = this.supabase.storage
       .from('uploads')
       .getPublicUrl(filePath);
+    const publicUrl = urlResult.data.publicUrl;
 
     const { data: result, error: updateError } = await this.supabase
       .from(collection)
@@ -493,7 +505,7 @@ class SupabaseClientWrapper {
     return data;
   }
 
-  public async register(email: string, password: string, passwordConfirm: string, username: string): Promise<any> {
+  public async register(email: string, password: string, _passwordConfirm: string, username: string, guild?: string): Promise<any> {
     // First create the auth user
     const { data: authData, error: authError } = await this.supabase.auth.signUp({
       email,
@@ -505,32 +517,45 @@ class SupabaseClientWrapper {
       }
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      // Provide more detailed error information
+      const errorMessage = authError.message || 'Authentication error occurred';
+      const error = new Error(errorMessage);
+      (error as any).originalError = authError;
+      throw error;
+    }
     if (!authData.user) throw new Error('User creation failed');
 
     // Then create the user profile in users table
+    const profileDataToInsert: any = {
+      id: authData.user.id,
+      email: email,
+      username: username,
+      favorite_bosses: [],
+      notification_settings: {
+        push_notifications: true,
+        notification_timing: [],
+        guild_notifications: false,
+        rare_boss_alerts: false
+      },
+      stats: {
+        reports_count: 0,
+        verified_reports: 0,
+        accuracy_rate: 0,
+        favorite_bosses_count: 0,
+        achievements: []
+      },
+      is_active: true
+    };
+
+    // Add guild if provided
+    if (guild) {
+      profileDataToInsert.guild = guild;
+    }
+
     const { data: profileData, error: profileError } = await this.supabase
       .from('users')
-      .insert({
-        id: authData.user.id,
-        email: email,
-        username: username,
-        favorite_bosses: [],
-        notification_settings: {
-          push_notifications: true,
-          notification_timing: [],
-          guild_notifications: false,
-          rare_boss_alerts: false
-        },
-        stats: {
-          reports_count: 0,
-          verified_reports: 0,
-          accuracy_rate: 0,
-          favorite_bosses_count: 0,
-          achievements: []
-        },
-        is_active: true
-      })
+      .insert(profileDataToInsert)
       .select()
       .single();
 
