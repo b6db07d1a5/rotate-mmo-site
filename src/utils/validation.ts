@@ -45,14 +45,19 @@ export class ValidationUtils {
       errors.push('Spawn time is required');
     } else {
       const spawnTime = new Date(data.spawn_time);
-      const now = new Date();
       
-      if (spawnTime > now) {
-        errors.push('Spawn time cannot be in the future');
+      // Validate that spawn_time is a valid date
+      if (isNaN(spawnTime.getTime())) {
+        errors.push('Spawn time must be a valid date');
       }
       
-      if (spawnTime < new Date(now.getTime() - 24 * 60 * 60 * 1000)) {
-        errors.push('Spawn time cannot be more than 24 hours ago');
+      // Allow future dates (for scheduling boss spawns before they actually occur)
+      // Only check that it's not too far in the past (e.g., more than 30 days ago)
+      const now = new Date();
+      const maxPastTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+      
+      if (spawnTime < maxPastTime) {
+        errors.push('Spawn time cannot be more than 30 days ago');
       }
     }
 

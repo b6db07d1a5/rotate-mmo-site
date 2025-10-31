@@ -116,10 +116,12 @@ export class BossService {
         data: boss,
         message: 'Boss created successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
+      // Return detailed error message for debugging
+      const errorMessage = error?.message || error?.error?.message || 'Failed to create boss';
       return {
         success: false,
-        error: 'Failed to create boss'
+        error: errorMessage
       };
     }
   }

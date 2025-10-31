@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS bosses (
   image TEXT,
   description TEXT,
   difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard', 'extreme', 'legendary')),
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by UUID, -- Foreign key will be added after users table is created
   verified BOOLEAN DEFAULT false,
   tags TEXT[],
   drops TEXT[],
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS spawn_events (
   updated TIMESTAMPTZ DEFAULT NOW(),
   boss_id UUID NOT NULL REFERENCES bosses(id) ON DELETE CASCADE,
   spawn_time TIMESTAMPTZ NOT NULL,
-  reported_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  reported_by UUID, -- Foreign key will be added after users table is created
   verified BOOLEAN DEFAULT false,
   server TEXT NOT NULL,
   notes TEXT,
@@ -82,6 +82,15 @@ CREATE TABLE IF NOT EXISTS users (
   last_login TIMESTAMPTZ
 );
 
+-- Add foreign key constraints for bosses and spawn_events (created before users table)
+ALTER TABLE bosses 
+  ADD CONSTRAINT bosses_created_by_fkey 
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE spawn_events 
+  ADD CONSTRAINT spawn_events_reported_by_fkey 
+  FOREIGN KEY (reported_by) REFERENCES users(id) ON DELETE SET NULL;
+
 -- ============================================
 -- 5. Create comments table
 -- ============================================
@@ -90,7 +99,7 @@ CREATE TABLE IF NOT EXISTS comments (
   created TIMESTAMPTZ DEFAULT NOW(),
   updated TIMESTAMPTZ DEFAULT NOW(),
   boss_id UUID NOT NULL REFERENCES bosses(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   likes INTEGER DEFAULT 0,
   replies UUID[] DEFAULT ARRAY[]::UUID[],
@@ -107,7 +116,7 @@ CREATE TABLE IF NOT EXISTS guilds (
   updated TIMESTAMPTZ DEFAULT NOW(),
   name TEXT NOT NULL UNIQUE,
   description TEXT,
-  leader_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+  leader_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   members UUID[] DEFAULT ARRAY[]::UUID[],
   boss_tracking_enabled BOOLEAN DEFAULT true,
   notification_channel TEXT,
@@ -133,7 +142,7 @@ CREATE TABLE IF NOT EXISTS guild_member_contributions (
   updated TIMESTAMPTZ DEFAULT NOW(),
   guild_id UUID NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,
   member_name TEXT NOT NULL,
-  member_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  member_id UUID REFERENCES users(id) ON DELETE SET NULL,
   contribution_score INTEGER DEFAULT 0,
   last_event_date TIMESTAMPTZ,
   UNIQUE(guild_id, member_name) -- Prevent duplicate entries for same member in same guild
@@ -159,7 +168,6 @@ CREATE INDEX IF NOT EXISTS idx_spawn_events_verified ON spawn_events(verified);
 
 -- Users indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_guild ON users(guild);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
@@ -225,8 +233,9 @@ ALTER TABLE guild_member_contributions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Bosses are viewable by everyone" ON bosses
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated users can create bosses" ON bosses
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- Allow public inserts (API endpoint is protected by JWT authentication middleware)
+CREATE POLICY "Allow boss creation via API" ON bosses
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update their own bosses" ON bosses
   FOR UPDATE USING (auth.uid() = created_by OR auth.role() = 'service_role');
@@ -238,8 +247,8 @@ CREATE POLICY "Users can delete their own bosses" ON bosses
 CREATE POLICY "Spawn events are viewable by everyone" ON spawn_events
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated users can create spawn events" ON spawn_events
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow spawn event creation via API" ON spawn_events
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update their own spawn events" ON spawn_events
   FOR UPDATE USING (auth.uid() = reported_by OR auth.role() = 'service_role');
@@ -264,8 +273,8 @@ CREATE POLICY "Users can update their own profile" ON users
 CREATE POLICY "Comments are viewable by everyone" ON comments
   FOR SELECT USING (is_deleted = false);
 
-CREATE POLICY "Authenticated users can create comments" ON comments
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
+CREATE POLICY "Allow comment creation via API" ON comments
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update their own comments" ON comments
   FOR UPDATE USING (auth.uid() = user_id OR auth.role() = 'service_role');
@@ -277,8 +286,8 @@ CREATE POLICY "Users can delete their own comments" ON comments
 CREATE POLICY "Guilds are viewable by everyone" ON guilds
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated users can create guilds" ON guilds
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = leader_id);
+CREATE POLICY "Allow guild creation via API" ON guilds
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Guild leaders can update their guilds" ON guilds
   FOR UPDATE USING (auth.uid() = leader_id OR auth.role() = 'service_role');
@@ -287,8 +296,8 @@ CREATE POLICY "Guild leaders can update their guilds" ON guilds
 CREATE POLICY "Contributions are viewable by everyone" ON guild_member_contributions
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated users can create contributions" ON guild_member_contributions
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow contribution creation via API" ON guild_member_contributions
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Service role can update contributions" ON guild_member_contributions
   FOR UPDATE USING (auth.role() = 'service_role');

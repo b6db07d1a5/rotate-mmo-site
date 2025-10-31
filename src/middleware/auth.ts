@@ -130,7 +130,7 @@ export const requireGuildMember = async (req: AuthRequest, res: Response, next: 
       return;
     }
 
-    const guildId = req.params.guildId || req.body.guild_id;
+    const guildId = req.params['guildId'] || req.body.guild_id;
     
     if (!guildId) {
       res.status(400).json({

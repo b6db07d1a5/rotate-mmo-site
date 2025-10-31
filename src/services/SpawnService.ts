@@ -145,10 +145,12 @@ export class SpawnService {
         data: spawnEvent,
         message: 'Spawn event created successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
+      // Return detailed error message for debugging
+      const errorMessage = error?.message || error?.error?.message || 'Failed to create spawn event';
       return {
         success: false,
-        error: 'Failed to create spawn event'
+        error: errorMessage
       };
     }
   }
